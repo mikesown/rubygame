@@ -66,10 +66,19 @@ class ResultsController < ApplicationController
         participant = @result.participants.build :player_id=>id, :agent_id=>player[:id]
       end
     end
-    #myWorker = GameWorker.new
-    #myWorker.playGame(@result, current_user)
-    hash = {:result => @result, :current_user => current_user}
-    GameWorker.async_playGame(hash)
+    @result.save
+    hash = {:result => @result.id, :current_user_login => current_user.login,
+      :current_user_email => current_user.email,
+      :playing_times => params[:playing_times].to_i}
+    if params[:playing_method] == 'sync'
+      myWorker = GameWorker.new
+      myWorker.playGame(hash)
+    else
+      GameWorker.async_playGame(hash)
+    end
+    
+    @result = Result.find(@result.id)
+    logger.info "Result #{@result.inspect}"
     
     respond_to do |format|
       # save match to db

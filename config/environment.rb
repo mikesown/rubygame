@@ -72,4 +72,16 @@ Rails::Initializer.run do |config|
   # Activate observers that should always be running
   # Please note that observers generated using script/generate observer need to have an _observer suffix
   # config.active_record.observers = :cacher, :garbage_collector, :forum_observer
+  
+  config.action_mailer.delivery_method = :smtp
+  config.action_mailer.smtp_settings = {
+    :enable_starttls_auto => true,
+    :address => 'smtp.gmail.com',
+    :port => 587,
+    :authentication => :plain,
+    #:domain => 'myapp.com',
+    :user_name => 'cs105rubygame@gmail.com',
+    :password => 'rubygame!'
+  }
 end
+

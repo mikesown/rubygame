@@ -1,9 +1,8 @@
 class GameWorker < Workling::Base
   def playGame(options)
-    logger.info "Playing game"
-      @result = options[:result]
-      current_user = options[:current_user]
-      
+
+      @result = Result.find(options[:result])
+      current_user_login = options[:current_user_login]
       # determine absolute paths - relative paths violate safe level for loading untrusted.rb
       rg_controller_path = File.dirname(__FILE__)
       rg_untrusted_path = rg_controller_path + '/../../tmp/untrusted'
@@ -23,7 +22,7 @@ class GameWorker < Workling::Base
       # write untrusted match script
       user_code_boundaries = [0]
       curTime = Time.now
-      untrusted_filename = current_user.login + "_" + curTime.tv_sec.to_s + "_" + curTime.tv_usec.to_s + '_untrusted.rb'
+      untrusted_filename = current_user_login + "_" + curTime.tv_sec.to_s + "_" + curTime.tv_usec.to_s + '_untrusted.rb'
       untrusted_file = rg_untrusted_path + '/' + untrusted_filename
       File.open(untrusted_file, 'w') do |f|
         user_code_files.each do |u_file|
@@ -48,7 +47,7 @@ class GameWorker < Workling::Base
         filename = user_code_filenames[user_code_boundaries.index(offset)]
         offset = 0 if offset == user_code_boundaries[-1]
         line_no -= offset
-        "#{current_user.login}/#{filename}:#{line_no}:"
+        "#{current_user_login}/#{filename}:#{line_no}:"
       end
       # Proc for embellishing cryptic error messages
       improve_err_msg = lambda do |exception|
@@ -65,55 +64,69 @@ class GameWorker < Workling::Base
       # run untrusted match script at max safe level inside an anonymous module
       single_game_limit_sec = 10
       app_thr = Thread.current
-      #untrusted_file = "/test/test_untrusted.rb"
-      game_thr = Thread.new do
-        $SAFE = 4
-        Kernel.load(untrusted_file, true)
-      end
-      begin
-        # wait synchronously for match to complete, or timeout and kill it
-        if game_thr.join(single_game_limit_sec)
-          # IS THIS A SECURITY BREACH?
-          game_result = YAML.load(YAML.dump(game_thr[:result]))
-          if game_result[0].exception.nil?
-            # record match results
-            @result.result = game_result[0].result
-            @result.saved = game_thr[:save_game]
-            @result.participants.size.times do |i|
-              prt = @result.participants[i]
-              prt_res = game_result[i+1]
-              prt.result = prt_res.result
-              prt.score = prt_res.score
-              prt.winner = prt_res.won_game_bool
-            end
-          else
-            @result.result = "Error in play_game method, see 'Saved' data for exception info"
-            e = game_result[0].exception
-            eb = game_result[0].exception_backtrace
-            if eb and eb.length > 0
-              eb_index = 0
-              while eb[eb_index] !~ /action_controller/
-                eb[eb_index] = eb[eb_index].gsub(match_line_nos, &line_corrections)
-                eb_index += 1
-              end
-              eb[eb_index..-1] = nil
-            end
-            improved_msg = improve_err_msg.call(e)
-            @result.saved = [e.class.to_s, improved_msg, eb ? eb : 'no backtrace available'].join(' ')
+      participant_wins= [0] * @result.participants.size
+      options[:playing_times].times do |i|
+          #untrusted_file = "/test/test_untrusted.rb"
+          game_thr = Thread.new do
+            $SAFE = 4
+            Kernel.load(untrusted_file, true)
           end
-        else
-          game_thr.kill
-          @result.result = "Game thread killed for exceeding allowable runtime"
-        end
-      rescue Exception => ohno
-        # rescue exceptions not caused by play_game
-        @result.result = "Error loading game or agent files, see 'Saved' data for exception info"
-        @result.saved = [ohno.class.to_s, ': ', improve_err_msg.call(ohno)]
-      ensure
-        File.delete(untrusted_file)
-        @result.save
-        current_user.results << @result
-  		  #ActionMailer
-  		end
+          begin
+            # wait synchronously for match to complete, or timeout and kill it
+            if game_thr.join(single_game_limit_sec)
+              # IS THIS A SECURITY BREACH?
+              game_result = YAML.load(YAML.dump(game_thr[:result]))
+              if game_result[0].exception.nil?
+                # record match results
+                @result.result = game_result[0].result
+                @result.saved = game_thr[:save_game]
+                logger.info "Saved: #{game_thr[:save_game]}"
+                @result.participants.size.times do |i|
+                  prt = @result.participants[i]
+                  prt_res = game_result[i+1]
+                  prt.result = prt_res.result
+                  prt.score = prt_res.score
+                  prt.winner = prt_res.won_game_bool
+                  if(prt.winner == true)
+                    participant_wins[i] += 1
+                  end
+                end
+              else
+                @result.result = "Error in play_game method, see 'Saved' data for exception info"
+                e = game_result[0].exception
+                eb = game_result[0].exception_backtrace
+                if eb and eb.length > 0
+                  eb_index = 0
+                  while eb[eb_index] !~ /action_controller/
+                    eb[eb_index] = eb[eb_index].gsub(match_line_nos, &line_corrections)
+                    eb_index += 1
+                  end
+                  eb[eb_index..-1] = nil
+                end
+                improved_msg = improve_err_msg.call(e)
+                @result.saved = [e.class.to_s, improved_msg, eb ? eb : 'no backtrace available'].join(' ')
+              end
+            else
+              game_thr.kill
+              @result.result = "Game thread killed for exceeding allowable runtime"
+            end
+            rescue Exception => ohno
+              # rescue exceptions not caused by play_game
+              @result.result = "Error loading game or agent files, see 'Saved' data for exception info"
+              @result.saved = [ohno.class.to_s, ': ', improve_err_msg.call(ohno)]
+            end
+      end
+      resultString = ""
+      participant_wins.each_index do |i|
+        resultString += "Aggregate score for Player #{i+1}: #{participant_wins[i]}\n"
+      end
+      winner = participant_wins.each_with_index.max[1] + 1
+      resultString += "Aggregate winner: Player #{winner}"
+      
+      @result.result = resultString
+      
+      File.delete(untrusted_file)
+      @result.save
+		  JobComplete.deliver_complete_mail(@result,options[:current_user_email])
   end
 end

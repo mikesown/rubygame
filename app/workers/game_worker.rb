@@ -1,6 +1,6 @@
 class GameWorker < Workling::Base
-  def playGame(options)
 
+  def playGame(options)
       @result = Result.find(options[:result])
       current_user_login = options[:current_user_login]
       # determine absolute paths - relative paths violate safe level for loading untrusted.rb
@@ -65,7 +65,13 @@ class GameWorker < Workling::Base
       single_game_limit_sec = 10
       app_thr = Thread.current
       participant_wins= [0] * @result.participants.size
+
       options[:playing_times].times do |i|
+          percentage = (i.to_f/options[:playing_times].to_f)*100
+          @result.result = percentage.to_s + "% Complete"
+          @result.saved = ""
+      	  @result.save
+          Workling.return.set(options[:uid], i)
           #untrusted_file = "/test/test_untrusted.rb"
           game_thr = Thread.new do
             $SAFE = 4
@@ -127,6 +133,9 @@ class GameWorker < Workling::Base
       
       File.delete(untrusted_file)
       @result.save
-		  JobComplete.deliver_complete_mail(@result,options[:current_user_email])
+      if options[:email_notification] == "send"
+	    JobComplete.deliver_complete_mail(@result,options[:current_user_email])
+	  end
   end
+
 end

@@ -1,7 +1,6 @@
 class ResultsController < ApplicationController
   before_filter :login_required, :except => [:index]
   before_filter :login_from_cookie
-	
 	# GET /results
   # GET /results.xml
   def index
@@ -28,6 +27,10 @@ class ResultsController < ApplicationController
       format.xml  { render :xml => @results }
     end
   end
+  
+  def updateR
+  render :partial => 'results'
+  end
 
   # GET /results/1
   # GET /results/1.xml
@@ -52,7 +55,7 @@ class ResultsController < ApplicationController
   # POST /results
   # POST /results.xml
   def create
-    
+   
     @result = Result.new(params[:result])
     @result.result = "Pending"
     params[:player].each do |id, player|
@@ -69,12 +72,12 @@ class ResultsController < ApplicationController
     @result.save
     hash = {:result => @result.id, :current_user_login => current_user.login,
       :current_user_email => current_user.email,
-      :playing_times => params[:playing_times].to_i}
+      :playing_times => params[:playing_times].to_i, :email_notification => params[:email_notification]}
     if params[:playing_method] == 'sync'
       myWorker = GameWorker.new
       myWorker.playGame(hash)
     else
-      GameWorker.async_playGame(hash)
+     GameWorker.async_playGame(hash)
     end
     
     @result = Result.find(@result.id)

@@ -17,3 +17,5 @@ config.action_controller.perform_caching             = false
 config.action_mailer.raise_delivery_errors = false
 
 Workling::Remote.dispatcher = Workling::Remote::Runners::StarlingRunner.new
+Workling::Return::Store.instance = Workling::Return::Store::MemoryReturnStore.new
+

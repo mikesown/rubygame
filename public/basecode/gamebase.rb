@@ -65,7 +65,6 @@ class GameBase
     # these result objects must be filled in when the game is over
     result = [GameResult.new]
     @players.length.times {result << AgentResult.new}
-
     # let's play!
     begin
       # but before play begins, call preparatory methods that might be implemented by game and agent authors

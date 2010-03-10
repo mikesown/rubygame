@@ -4,6 +4,7 @@ class ResultsController < ApplicationController
 	# GET /results
   # GET /results.xml
   def index
+    get_pending
     if params[:filter_type].nil?
       @filter = {}
       @title = "All Results"
@@ -28,8 +29,15 @@ class ResultsController < ApplicationController
     end
   end
   
-  def updateR
-  render :partial => 'results'
+  def get_pending
+    @pending = Result.find(:all, :conditions=>{:saved=>""})
+  end
+  
+  def update_pending
+    get_pending
+    if !@pending.empty?
+      render :partial => 'pending_results'
+    end
   end
 
   # GET /results/1

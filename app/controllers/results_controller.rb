@@ -63,7 +63,6 @@ class ResultsController < ApplicationController
   # POST /results
   # POST /results.xml
   def create
-   
     @result = Result.new(params[:result])
     @result.result = "Pending"
     params[:player].each do |id, player|
@@ -77,6 +76,7 @@ class ResultsController < ApplicationController
         participant = @result.participants.build :player_id=>id, :agent_id=>player[:id]
       end
     end
+
     @result.save
     hash = {:result => @result.id, :current_user_login => current_user.login,
       :current_user_email => current_user.email,

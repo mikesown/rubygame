@@ -1,8 +1,8 @@
 class GameWorker < Workling::Base
-
   def playGame(options)
       @result = Result.find(options[:result])
       current_user_login = options[:current_user_login]
+
       # determine absolute paths - relative paths violate safe level for loading untrusted.rb
       rg_controller_path = File.dirname(__FILE__)
       rg_untrusted_path = rg_controller_path + '/../../tmp/untrusted'
@@ -64,6 +64,7 @@ class GameWorker < Workling::Base
       # run untrusted match script at max safe level inside an anonymous module
       single_game_limit_sec = 10
       app_thr = Thread.current
+
       participant_wins= [0] * @result.participants.size
 
       options[:playing_times].times do |i|

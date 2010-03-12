@@ -11,8 +11,8 @@
 <div class='results_result'><strong>Result</strong></div>
 <div class='results_saved'><strong>Saved</strong></div>
 <div style="clear:both"></div>
-<div id='pending_results'><%= render :partial => 'pending_results' %></div>
-<%= render :partial => 'results' %>
+<div id='results'><%=render :partial => 'results'%></div>
+
 
 </table>
 
@@ -20,6 +20,6 @@
 <%= will_paginate @results %>
 <hr/>
 
-<%= periodically_call_remote(:update => 'pending_results',:url =>
-{ :action => :update_pending },
+<%= periodically_call_remote(:update => 'results',:url =>
+{ :action => :update_results },
 :frequency => 3 )%>

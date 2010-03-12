@@ -1,0 +1,15 @@
+<% for result in @pending %>
+
+  <div class='results_id'><%= link_to "#{result.id}", :action => 'show', :id => result %></div>
+  <div class='results_game'><%= link_to result.game.name, :controller => :games, :action => :show, :id => result.game.id %></div>
+  <div class='results_user'><%= result.user.login %></div>
+  <div class='results_timestamp'><%=h result.send(Result.content_columns[0].name)%></div>
+  <div class='results_result'><%=h result.send(Result.content_columns[1].name)%></div>
+  <div class='results_saved'><%=h result.send(Result.content_columns[2].name)%></div>
+    <% if logged_in? and current_user.id == result.user.id %>
+      <div class='results_small'><%= button_to 'Destroy', {:action => 'destroy', :id => result, 
+                                                 :filter_type => @filter[:type], :filter_id => @filter[:id], :filter_name => @filter[:name]}, 
+                                  :confirm => 'Are you sure?', :method => :delete %></div>
+      <div style="clear:both"></div>
+    <% end %>
+<% end %>  

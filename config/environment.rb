@@ -83,5 +83,7 @@ Rails::Initializer.run do |config|
     :user_name => 'cs105rubygame@gmail.com',
     :password => 'rubygame!'
   }
+  
+  config.gem "sqlite-foreigner", :lib => "foreigner", :source => "http://gemcutter.org"
+  
 end
-

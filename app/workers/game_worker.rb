@@ -69,8 +69,8 @@ class GameWorker < Workling::Base
 
       options[:playing_times].times do |i|
           percentage = (i.to_f/options[:playing_times].to_f)*100
-          @result.result = percentage.to_s + "% Complete"
-          @result.saved = ""
+          @result.result = "Percentage Complete: "+percentage.to_s + "%"
+          @result.saved = "Pending"
       	  @result.save
           Workling.return.set(options[:uid], i)
           #untrusted_file = "/test/test_untrusted.rb"

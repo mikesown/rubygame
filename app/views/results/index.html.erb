@@ -4,16 +4,14 @@
 
 
 
-<table>
-  <tr>
-  <th>ID</th>
-  <th>Game</th>
-  <th>User</th>
-  <% for column in Result.content_columns %>
-    <th><%= column.human_name %></th>
-  <% end %>
-  </tr>
-   
+<div class='results_id'><strong>ID</strong></div>
+<div class='results_game'><strong>Game</strong></div>
+<div class='results_user'><strong>User</strong></div>
+<div class='results_timestamp'><strong>Time</strong></div>
+<div class='results_result'><strong>Result</strong></div>
+<div class='results_saved'><strong>Saved</strong></div>
+<div style="clear:both"></div>
+<div id='pending_results'><%= render :partial => 'pending_results' %></div>
 <%= render :partial => 'results' %>
 
 </table>
@@ -22,3 +20,6 @@
 <%= will_paginate @results %>
 <hr/>
 
+<%= periodically_call_remote(:update => 'pending_results',:url =>
+{ :action => :update_pending },
+:frequency => 3 )%>

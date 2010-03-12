@@ -4,23 +4,23 @@ class ResultsController < ApplicationController
 	# GET /results
   # GET /results.xml
   def index
-    get_pending
+    @pending = Result.find(:all, :conditions=>{:saved=>"Pending"})
     if params[:filter_type].nil?
       @filter = {}
       @title = "All Results"
-      @results = Result.paginate :page => params[:page], :order => "id DESC"
+      @results = Result.paginate :page => params[:page],:conditions=>["saved != ?","Pending"], :order => "id DESC"
     else
       @filter = {:type => params[:filter_type], :id => params[:filter_id], :name => params[:filter_name]}
       @title = "Results For #{@filter[:type]}: #{@filter[:name]}"  
       case @filter[:type]
         when 'Agent'
 					agent = Agent.find(@filter[:id])
-					@results = agent.game_results.paginate :page => params[:page], :order => "id DESC"
+					@results = agent.game_results.paginate :page => params[:page],:conditions=>["saved != ?","Pending"], :order => "id DESC"
         when 'Game'
 				  game = Game.find(@filter[:id])
           @results = game.results.paginate :page => params[:page], :order => "id DESC"
         when 'User'
-          @results = current_user.results.paginate :page => params[:page], :order => "id DESC"
+          @results = current_user.results.paginate :page => params[:page], :conditions=>["saved != ?","Pending"], :order => "id DESC"
       end
     end
     respond_to do |format|
@@ -30,14 +30,13 @@ class ResultsController < ApplicationController
   end
   
   def get_pending
-    @pending = Result.find(:all, :conditions=>{:saved=>""})
+    @filter = {:type => params[:filter_type], :id => params[:filter_id], :name => params[:filter_name]}
+    @pending = Result.find(:all, :conditions=>{:saved=>"Pending"})
   end
   
   def update_pending
     get_pending
-    if !@pending.empty?
-      render :partial => 'pending_results'
-    end
+    render :partial => 'pending_results'
   end
 
   # GET /results/1
